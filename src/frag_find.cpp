@@ -498,6 +498,9 @@ void masters_t::read_md5deep(const char *fn)
     }
 }
 
+#ifndef HAVE_RANDOM
+#define random(x) rand(x)
+#endif
 
 int main(int argc,char **argv)
 {
@@ -592,6 +595,21 @@ int main(int argc,char **argv)
     aftimer timer;
     timer.start();
     u_char *buf = (u_char *)malloc(blocksize);
+
+	//RANDOM SAMPLING
+	bool r_s = true;
+	/* Create a list of blocks to sample */
+	srand(time(NULL));
+	std::set<uint64_t> blocks_to_sample;
+	double sampling_fraction = 0.05;
+	uint64_t nblocks = imagefile.blocks;
+	while(blocks_to_sample.size() < nblocks * sampling_fraction){
+		uint64_t blk_high = ((uint64_t)random()) << 32;
+		uint64_t blk_low  = random();
+		uint64_t blk =  (blk_high | blk_low) % nblocks;
+		blocks_to_sample.insert(blk); // will be added even if already present
+	}
+	
     for(uint64_t blocknumber=opt_start;blocknumber < opt_end && blocknumber < imagefile.blocks; blocknumber++){
 	/* If this is one of the 100,000 even blocks, print status info */
 	if(blocknumber>opt_start && (((blocknumber-opt_start) % 100000)==0)){
@@ -609,6 +627,10 @@ int main(int argc,char **argv)
 	    }
 	    fflush(stdout);
 	}
+
+	//RANDOM SAMPLING
+	/* Limit search to the random samples */
+	if (r_s && blocks_to_sample.find(blocknumber) == blocks_to_sample.end()) continue;
 
 	/* Scan through the input file block-by-block*/
 	if(imagefile.getblock(blocknumber,buf)<0){
