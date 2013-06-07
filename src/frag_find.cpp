@@ -236,6 +236,7 @@ void usage()
     printf("     -X1          - do not use bloom filter or prefilter\n");
     printf("     -X2          - do not use prefilter\n");
     printf("     -xfname.xml  - output digital forensics XML file to fname.xml\n");
+    printf("     -R <frac>[:<pass>] - use <frac> as random sampling fraction (default is 1) and <pass> as number of passes (default is 1)\n");
     exit(1);
 }
 
@@ -498,9 +499,44 @@ void masters_t::read_md5deep(const char *fn)
     }
 }
 
+//RANDOM SAMPLING START
+std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
+    std::stringstream ss(s);
+    std::string item;
+    while (std::getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+    return elems;
+}
+std::vector<std::string> split(const std::string &s, char delim) {
+    std::vector<std::string> elems;
+    split(s, delim, elems);
+    return elems;
+}
+int sampling_passes = 1;
+double sampling_fraction = 1;
+void set_sampling_parameters(const std::string &p){
+	std::vector<std::string> params = split(p,':');
+	if(params.size()!=1 && params.size()!=2){
+	    errx(1,"error: sampling parameters must be fraction[:passes]");
+	}
+	sampling_fraction = atof(params.at(0).c_str());
+	if(sampling_fraction<=0 || sampling_fraction>=1){
+	    errx(1,"error: sampling fraction f must be 0<f<=1; you provided '%s'",params.at(0).c_str());
+	}
+	if(params.size()==2){
+	    sampling_passes = atoi(params.at(1).c_str());
+	    if(sampling_passes==0){
+			errx(1,"error: sampling passes must be >=1; you provided '%s'",params.at(1).c_str());
+	    }
+	}
+}
+bool sampling(){return sampling_fraction<1.0;}
+
 #ifndef HAVE_RANDOM
 #define random(x) rand(x)
 #endif
+//RANDOM SAMPLING END
 
 int main(int argc,char **argv)
 {
@@ -513,6 +549,7 @@ int main(int argc,char **argv)
     uint64_t bloom_false_positives=0;
     class xml *x = 0;
     string command_line;
+	std::string opt_sampling_params;
 
     /* Make a copy of the command line */
     for(int i=0;i<argc;i++){
@@ -522,7 +559,7 @@ int main(int argc,char **argv)
 
     prefilter_t prefilter;	// bitset to hold first 3 bytes of block
 
-    while ((ch = getopt(argc,argv,"b:e:hM:m:Ss:rx:X:?")) != -1){
+    while ((ch = getopt(argc,argv,"b:e:hM:m:Ss:rx:X:R:?")) != -1){
 	switch(ch){
 	case 's': opt_start = atoi64(optarg);break;
 	case 'e': opt_end   = atoi64(optarg);break;
@@ -531,6 +568,7 @@ int main(int argc,char **argv)
 	case 'S': opt_stats++;break;
 	case 'M': opt_M     = atoi(optarg); break;
 	case 'm': masters.read_md5deep(optarg); break;
+	case 'R': opt_sampling_params = optarg; break;
 	case 'X':
 	    switch(atoi(optarg)){
 	    case 1: use_bloom = 0;break;
@@ -596,19 +634,25 @@ int main(int argc,char **argv)
     timer.start();
     u_char *buf = (u_char *)malloc(blocksize);
 
-	//RANDOM SAMPLING
-	bool r_s = true;
+	//RANDOM SAMPLING START
+	if(opt_sampling_params.size()>0) set_sampling_parameters(opt_sampling_params);
 	/* Create a list of blocks to sample */
 	srand(time(NULL));
 	std::set<uint64_t> blocks_to_sample;
-	double sampling_fraction = 0.05;
 	uint64_t nblocks = imagefile.blocks;
-	while(blocks_to_sample.size() < nblocks * sampling_fraction){
-		uint64_t blk_high = ((uint64_t)random()) << 32;
-		uint64_t blk_low  = random();
-		uint64_t blk =  (blk_high | blk_low) % nblocks;
-		blocks_to_sample.insert(blk); // will be added even if already present
+	int at_pass = 0;
+	if (sampling()) {
+		while(at_pass < sampling_passes) {
+			at_pass++;
+			while(blocks_to_sample.size() < nblocks * sampling_fraction * at_pass){
+				uint64_t blk_high = ((uint64_t)random()) << 32;
+				uint64_t blk_low  = random();
+				uint64_t blk =  (blk_high | blk_low) % nblocks;
+				blocks_to_sample.insert(blk); // will be added even if already present
+			}
+		}
 	}
+	//RANDOM SAMPLING END
 	
     for(uint64_t blocknumber=opt_start;blocknumber < opt_end && blocknumber < imagefile.blocks; blocknumber++){
 	/* If this is one of the 100,000 even blocks, print status info */
@@ -628,9 +672,10 @@ int main(int argc,char **argv)
 	    fflush(stdout);
 	}
 
-	//RANDOM SAMPLING
+	//RANDOM SAMPLING START
 	/* Limit search to the random samples */
-	if (r_s && blocks_to_sample.find(blocknumber) == blocks_to_sample.end()) continue;
+	if (sampling() && blocks_to_sample.find(blocknumber) == blocks_to_sample.end()) continue;
+	//RANDOM SAMPLING END
 
 	/* Scan through the input file block-by-block*/
 	if(imagefile.getblock(blocknumber,buf)<0){
