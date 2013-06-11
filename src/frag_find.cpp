@@ -569,6 +569,7 @@ int main(int argc,char **argv)
 	case 'S': opt_stats++;break;
 	case 'M': opt_M     = atoi(optarg); break;
 	case 'm': opt_md5 = optarg; break;
+	case 'R': opt_sampling_params = optarg; break;
 	case 'X':
 		switch(atoi(optarg)){
 		case 1: use_bloom = 0;break;
