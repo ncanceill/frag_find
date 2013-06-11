@@ -270,7 +270,7 @@ void masterfile::print_report(class xml *x, uint32_t blocksize) {
 	}
 
 	if(run_blocks>1){
-		printf("%10"PRId64"-%-10"PRId64"	%10"PRId64"-%-10"PRId64"   (%"PRId64" blocks)\n",
+		printf("%10"PRId64"-%-10"PRId64" %10"PRId64"-%-10"PRId64" (%"PRId64" blocks)\n",
 		   tb,tb+run_blocks-1, first_ib, first_ib+run_blocks-1, run_blocks);
 		if(x){
 		char buf[1024];
@@ -286,7 +286,7 @@ void masterfile::print_report(class xml *x, uint32_t blocksize) {
 		i != filemap[tb].end();
 		i++){
 		if(first){
-		printf("%10"PRId64"			   ",tb);
+		printf("%10"PRId64"	",tb);
 		first = false;
 		}
 		printf(" %10"PRId64" ",*i);
