@@ -657,7 +657,7 @@ int main(int argc,char **argv)
 	
 	for(uint64_t blocknumber=opt_start;blocknumber < opt_end && blocknumber < imagefile.blocks; blocknumber++){
 	/* If this is one of the 100,000 even blocks, print status info */
-	if(blocknumber>opt_start && (((blocknumber-opt_start) % 100000)==0)){
+	if(blocknumber>opt_start && (((blocknumber-opt_start) % 1000000)==0)){
 		uint64_t blocks = blocknumber-opt_start;
 		uint64_t total = opt_end-opt_start;
 		putchar('\r');
