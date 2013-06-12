@@ -147,6 +147,7 @@ void nsrl_bloom_print_usage(void);
 void nsrl_bloom_add(nsrl_bloom *b,const uint8_t *hash); 
 int  nsrl_bloom_addString(nsrl_bloom *b,const char *str);  // add a string; return 0 if not presently present, 1 if already present.
 int  nsrl_bloom_query( nsrl_bloom *b,const uint8_t *hash); // 0 not present; 1 is present
+int  nsrl_bloom_query_check( nsrl_bloom *b,const uint8_t *hash,int just_checking); // 0 not present; 1 is present
 int  nsrl_bloom_queryString( nsrl_bloom *b,const char *str); // 0 not present; 1 is present
 double nsrl_bloom_utilization(const nsrl_bloom *b);			  // on scale 0..1
 
@@ -224,6 +225,7 @@ public:
 	add(buf);
     }
     bool query(const uint8_t *hash) const {	return nsrl_bloom_query(const_cast<NSRLBloom*>(this),hash);    }
+    bool query_check(const uint8_t *hash) const {  return nsrl_bloom_query_check(const_cast<NSRLBloom*>(this),hash,1);    }
     bool queryString(const char *str)  { return nsrl_bloom_queryString(this,str);    }
     bool queryString(const std::string &str)  {	return nsrl_bloom_queryString(this,str.c_str());    }
     double utilization() const{
