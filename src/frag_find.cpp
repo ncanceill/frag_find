@@ -342,7 +342,7 @@ void masterfile::print_report(class xml *x, uint32_t blocksize) {
 void masterfile::add_block_hash(uint32_t blocknumber,const md5_t &md5,NSRLBloom &b)
 {
     // report if it is in the input file twice
-    if(opt_raw && b.query(md5.digest)){
+    if(opt_raw && b.query_check(md5.digest)){
 	cout << "Input file block " << blocknumber << "appears previously at ";;
 	for(blocklist_t::const_iterator i = this->md5map[md5].begin();
 	    i!=this->md5map[md5].end();
