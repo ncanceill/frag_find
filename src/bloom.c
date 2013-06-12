@@ -460,7 +460,11 @@ int nsrl_bloom_addString(nsrl_bloom *b,const char *str)
  *
  * Returns: 1 if present, 0 if not present
  */
-int nsrl_bloom_query( nsrl_bloom *b,const unsigned char *hash)
+int nsrl_bloom_query( nsrl_bloom *b,const unsigned char *hash) {
+    return nsrl_bloom_query_check(b,hash,0);
+}
+
+int nsrl_bloom_query_check( nsrl_bloom *b,const unsigned char *hash, int just_checking)
 {
     uint32_t i,j;
     int found = 1;
@@ -492,7 +496,7 @@ int nsrl_bloom_query( nsrl_bloom *b,const unsigned char *hash)
     }
     /* All of the bits were set; hash must be in the bloom filter */
     if(b->debug>1) putchar('\n');
-    b->hits++;
+    if (just_checking == 0) b->hits++;
 #ifdef HAVE_PTHREAD
     if (b->multithreaded){
 	pthread_mutex_unlock(&b->mutex);
