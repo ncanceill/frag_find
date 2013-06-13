@@ -554,43 +554,43 @@ int main(int argc,char **argv)
 
 	/* Make a copy of the command line */
 	for(int i=0;i<argc;i++){
-	if(i>0) command_line.push_back(' ');
-	command_line.append(argv[i]);
+		if(i>0) command_line.push_back(' ');
+		command_line.append(argv[i]);
 	}
 
 	prefilter_t prefilter;	// bitset to hold first 3 bytes of block
 
 	while ((ch = getopt(argc,argv,"b:e:hM:m:Ss:rx:X:R:?")) != -1){
-	switch(ch){
-	case 's': opt_start = atoi64(optarg);break;
-	case 'e': opt_end   = atoi64(optarg);break;
-	case 'r': opt_raw   = 1;break;
-	case 'b': blocksize = atoi(optarg); break;
-	case 'S': opt_stats++;break;
-	case 'M': opt_M     = atoi(optarg); break;
-	case 'm': opt_md5 = optarg; break;
-	case 'R': opt_sampling_params = optarg; break;
-	case 'X':
-		switch(atoi(optarg)){
-		case 1: use_bloom = 0;break;
-		case 2: use_prefilter = 0;break;
+		switch(ch){
+		case 's': opt_start = atoi64(optarg);break;
+		case 'e': opt_end   = atoi64(optarg);break;
+		case 'r': opt_raw   = 1;break;
+		case 'b': blocksize = atoi(optarg); break;
+		case 'S': opt_stats++;break;
+		case 'M': opt_M     = atoi(optarg); break;
+		case 'm': opt_md5 = optarg; break;
+		case 'R': opt_sampling_params = optarg; break;
+		case 'X':
+			switch(atoi(optarg)){
+			case 1: use_bloom = 0;break;
+			case 2: use_prefilter = 0;break;
+			break;
+			default: fprintf(stderr,"Invalid -X setting\n");
+			usage();
+			}
 		break;
-		default: fprintf(stderr,"Invalid -X setting\n");
-		usage();
+		case 'x':
+			x = new xml(optarg,true);
+			break;
+		case 'h':
+		case '?':
+		default:
+			usage();
 		}
-		break;
-	case 'x':
-		x = new xml(optarg,true);
-		break;
-	case 'h':
-	case '?':
-	default:
-		usage();
-	}
 	}
 	if(opt_M <5 || opt_M > 32){
-	fprintf(stderr,"M must be between 5 and 32.\n");
-	exit(1);
+		fprintf(stderr,"M must be between 5 and 32.\n");
+		exit(1);
 	}
 	if (!opt_md5.empty()) masters.read_md5deep(opt_md5.c_str(),blocksize);
 
@@ -600,27 +600,27 @@ int main(int argc,char **argv)
 	if(argc<2) usage();
 
 	if(blocksize<4){
-	printf("Blocksizes smaller than 4 are meaningless. Try again.\n");
-	exit(1);
+		printf("Blocksizes smaller than 4 are meaningless. Try again.\n");
+		exit(1);
 	}
 
 	masters.bloom_create(opt_M);
 
 	if(imagefile.open(*argv,blocksize)<0) err(1,"Cannot open %s",imagefile.filename);
 	if(imagefile.filesize==0){
-	err(1,"Error: Image size %s is zero.\n",*argv);
+		err(1,"Error: Image size %s is zero.\n",*argv);
 	}
 
 	if(imagefile.filesize < blocksize){
-	err(1,"Image size (%"PRId64") is smaller than blocksize (%d); cannot continue.\n",
-		imagefile.filesize,blocksize);
+		err(1,"Image size (%"PRId64") is smaller than blocksize (%d); cannot continue.\n",
+			imagefile.filesize,blocksize);
 	}
 
 	argv++;
 
 	/* Load up all of the master files */
 	for(;*argv;argv++){
-	masters.add_master_file(*argv,blocksize);
+		masters.add_master_file(*argv,blocksize);
 	}
 
 	printf("Now searching image file...\n");
@@ -657,68 +657,68 @@ int main(int argc,char **argv)
 	//RANDOM SAMPLING END
 	
 	for(uint64_t blocknumber=opt_start;blocknumber < opt_end && blocknumber < imagefile.blocks; blocknumber++){
-	/* If this is one of the 100,000 even blocks, print status info */
-	if(blocknumber>opt_start && (((blocknumber-opt_start) % 1000000)==0)){
-		uint64_t blocks = blocknumber-opt_start;
-		uint64_t total = opt_end-opt_start;
-		putchar('\r');
-		printf("%"PRId64"M out of %"PRId64"M sectors processed; hits=%"PRId64" ",
-		   blocks/1000000,total/1000000,hits);
-		if(timer.elapsed_seconds()>1.0){
-		uint64_t kblocks = blocks/1000;
+		/* If this is one of the 100,000 even blocks, print status info */
+		if(blocknumber>opt_start && (((blocknumber-opt_start) % 1000000)==0)){
+			uint64_t blocks = blocknumber-opt_start;
+			uint64_t total = opt_end-opt_start;
+			putchar('\r');
+			printf("%"PRId64"M out of %"PRId64"M sectors processed; hits=%"PRId64" ",
+			   blocks/1000000,total/1000000,hits);
+			if(timer.elapsed_seconds()>1.0){
+			uint64_t kblocks = blocks/1000;
 
-		printf("; %3g Kblocks/sec; done in %s",
-			   kblocks/timer.elapsed_seconds(),
-			   timer.eta_text((double)blocks/(double)total).c_str());
+			printf("; %3g Kblocks/sec; done in %s",
+				   kblocks/timer.elapsed_seconds(),
+				   timer.eta_text((double)blocks/(double)total).c_str());
+			}
+			fflush(stdout);
 		}
-		fflush(stdout);
-	}
 
-	//RANDOM SAMPLING START
-	/* Limit search to the random samples */
-	if (sampling() && blocks_to_sample.find(blocknumber) == blocks_to_sample.end()) continue;
-	//RANDOM SAMPLING END
+		//RANDOM SAMPLING START
+		/* Limit search to the random samples */
+		if (sampling() && blocks_to_sample.find(blocknumber) == blocks_to_sample.end()) continue;
+		//RANDOM SAMPLING END
 
-	/* Scan through the input file block-by-block*/
-	if(imagefile.getblock(blocknumber,buf)<0){
-		printf("premature end of file?\n");
-		break;
-	}
-
-	/* If block is not in prefilter, then there is no sense to compute hash */
-	if(use_prefilter){
-		if(prefilter.query_from_buf(buf)==0){
-		continue;
+		/* Scan through the input file block-by-block*/
+		if(imagefile.getblock(blocknumber,buf)<0){
+			printf("premature end of file?\n");
+			break;
 		}
-	}
-	/* Compute the MD5 */
-	md5_t md5 = md5_generator::hash_buf(buf,blocksize);
 
-	/* If the block's MD5 is not in the bloom filter,
-	 * there is no need to scan for it in the file maps.
-	 */
-
-	if(masters.b.query(md5.digest)==0) continue;
-
-	/* Get the list of blocks where that MD5 was observed and add each one to the filemap.
-	 */
-	if(opt_raw && use_bloom) printf("Block %"PRId64" MD5 in bloom filter.\n",blocknumber);
-	if(opt_raw) printf("   >>> found at ");
-	uint64_t added = 0;
-
-	for(masters_t::iterator t = masters.begin(); t!=masters.end(); t++){
-		for(blocklist_t::iterator i = (*t)->md5map[md5].begin();
-		i!=(*t)->md5map[md5].end();
-		i++){
-		if(opt_raw) printf("   %"PRId64" ",*i);
-		(*t)->filemap[*i].push_back(blocknumber);
-		added++;
+		/* If block is not in prefilter, then there is no sense to compute hash */
+		if(use_prefilter){
+			if(prefilter.query_from_buf(buf)==0){
+			continue;
+			}
 		}
-	}
+		/* Compute the MD5 */
+		md5_t md5 = md5_generator::hash_buf(buf,blocksize);
 
-	if(opt_raw) printf("\n");
-	if(added==0) bloom_false_positives++;
-	hits++;
+		/* If the block's MD5 is not in the bloom filter,
+		 * there is no need to scan for it in the file maps.
+		 */
+
+		if(masters.b.query(md5.digest)==0) continue;
+
+		/* Get the list of blocks where that MD5 was observed and add each one to the filemap.
+		 */
+		if(opt_raw && use_bloom) printf("Block %"PRId64" MD5 in bloom filter.\n",blocknumber);
+		if(opt_raw) printf("   >>> found at ");
+		uint64_t added = 0;
+
+		for(masters_t::iterator t = masters.begin(); t!=masters.end(); t++){
+			for(blocklist_t::iterator i = (*t)->md5map[md5].begin();
+				i!=(*t)->md5map[md5].end();
+				i++){
+				if(opt_raw) printf("   %"PRId64" ",*i);
+				(*t)->filemap[*i].push_back(blocknumber);
+				added++;
+			}
+		}
+
+		if(opt_raw) printf("\n");
+		if(added==0) bloom_false_positives++;
+		hits++;
 	}
 	free(buf);
 
@@ -729,76 +729,76 @@ int main(int argc,char **argv)
 
 	/* If we got this far, it's time to make the XML file */
 	if(x){
-	x->push("frag_find","xmloutputversion='0.3'");
-	x->push("metadata",
-		"\n  xmlns='http://afflib.org/frag_find/' "
-		"\n  xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' "
-		"\n  xmlns:dc='http://purl.org/dc/elements/1.1/'" );
-	x->xmlout("dc:type","Hash-Based Carving Report","",false);
-	x->pop();
+		x->push("frag_find","xmloutputversion='0.3'");
+		x->push("metadata",
+			"\n  xmlns='http://afflib.org/frag_find/' "
+			"\n  xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' "
+			"\n  xmlns:dc='http://purl.org/dc/elements/1.1/'" );
+		x->xmlout("dc:type","Hash-Based Carving Report","",false);
+		x->pop();
 
-	/* Output carver information per photorec standard */
-	x->push("creator");
-	x->xmlout("program","frag_find");
-	x->xmlout("version",PACKAGE_VERSION);
-	x->add_DFXML_build_environment();
-	x->add_DFXML_execution_environment(command_line);
-	x->pop();			// creator
-	x->push("source");
-	x->xmlout("image_filename",imagefile.filename);
-	x->xmlprintf("blocks","","%"PRIu64,imagefile.blocks);
-	x->xmlprintf("blocksize","","%"PRIu32,(uint32_t)masters[0]->blocksize);
+		/* Output carver information per photorec standard */
+		x->push("creator");
+		x->xmlout("program","frag_find");
+		x->xmlout("version",PACKAGE_VERSION);
+		x->add_DFXML_build_environment();
+		x->add_DFXML_execution_environment(command_line);
+		x->pop();			// creator
+		x->push("source");
+		x->xmlout("image_filename",imagefile.filename);
+		x->xmlprintf("blocks","","%"PRIu64,imagefile.blocks);
+		x->xmlprintf("blocksize","","%"PRIu32,(uint32_t)masters[0]->blocksize);
 	}
 
 
 	for(masters_t::iterator t = masters.begin(); t!=masters.end(); t++){
-	printf("-------------------\n");
-	printf("Master file: %s  (%"PRId64" blocks)\n",(*t)->filename,(*t)->blocks);
-	if(x){
-		x->push("fileobject");
-		x->xmlout("filename",(*t)->filename);
-		x->xmlprintf("blocks",_e,"%"PRIu64,(*t)->blocks);
-		x->xmlprintf("filesize",_e,"%"PRIu64,(*t)->filesize);
-		x->xmlout("hashdigest",(*t)->md5.hexdigest(),string("type='md5'"),false);
-	}
-	if(opt_start!=0){
-		printf("   NOTE: Image scan started at block %"PRId64"\n",opt_start);
-	}
-	if(opt_end!=imagefile.blocks){
-		printf("   NOTE: Image scan ended at block %"PRId64"\n",opt_end);
-	}
+		printf("-------------------\n");
+		printf("Master file: %s  (%"PRId64" blocks)\n",(*t)->filename,(*t)->blocks);
+		if(x){
+			x->push("fileobject");
+			x->xmlout("filename",(*t)->filename);
+			x->xmlprintf("blocks",_e,"%"PRIu64,(*t)->blocks);
+			x->xmlprintf("filesize",_e,"%"PRIu64,(*t)->filesize);
+			x->xmlout("hashdigest",(*t)->md5.hexdigest(),string("type='md5'"),false);
+		}
+		if(opt_start!=0){
+			printf("   NOTE: Image scan started at block %"PRId64"\n",opt_start);
+		}
+		if(opt_end!=imagefile.blocks){
+			printf("   NOTE: Image scan ended at block %"PRId64"\n",opt_end);
+		}
 
-	printf("Blocks of master file found in image file: %"PRId64"\n",hits);
-	printf("Here is where they were found:\n");
+		printf("Blocks of master file found in image file: %"PRId64"\n",hits);
+		printf("Here is where they were found:\n");
 
-	if(opt_raw){
-		printf("RAW FILEMAP:\n");
-		printf("===============================================================================\n");
-		printf("\n");
-		(*t)->print_report(0,blocksize);
-	}
+		if(opt_raw){
+			printf("RAW FILEMAP:\n");
+			printf("===============================================================================\n");
+			printf("\n");
+			(*t)->print_report(0,blocksize);
+		}
 
-	(*t)->filemap.clean();
+		(*t)->filemap.clean();
 
-	/* note: perhaps it would make more sense to iteratively clean. */
-	(*t)->print_report(x,blocksize);
-	printf("Total blocks of original file found: %"PRId64" (%2.0f%%)\n",
-		   (*t)->filemap.found_count(),
-		   (*t)->filemap.found_percent());
-	if(opt_stats){
-		double runtime = timer.elapsed_seconds();
-		printf("Total number of prefilter hits: %"PRId64" (%"PRId64" blocks filtered out)\n",
-		   prefilter.hits,(imagefile.blocks-opt_start)-prefilter.hits);
-		printf("Total number of bloom filter hits: %"PRId64" (%"PRId64" blocks filtered out)\n",
-		   masters.b.hits,(imagefile.blocks-opt_start)-masters.b.hits);
-		printf("Total number of bloom false positives: %"PRId64" (should be low)\n",bloom_false_positives);
-		printf("Prefilter Utilization: %5.2f%% (should be high)\n",prefilter.utilization()*100.0);
+		/* note: perhaps it would make more sense to iteratively clean. */
+		(*t)->print_report(x,blocksize);
+		printf("Total blocks of original file found: %"PRId64" (%2.0f%%)\n",
+			   (*t)->filemap.found_count(),
+			   (*t)->filemap.found_percent());
+		if(opt_stats){
+			double runtime = timer.elapsed_seconds();
+			printf("Total number of prefilter hits: %"PRId64" (%"PRId64" blocks filtered out)\n",
+			   prefilter.hits,(imagefile.blocks-opt_start)-prefilter.hits);
+			printf("Total number of bloom filter hits: %"PRId64" (%"PRId64" blocks filtered out)\n",
+			   masters.b.hits,(imagefile.blocks-opt_start)-masters.b.hits);
+			printf("Total number of bloom false positives: %"PRId64" (should be low)\n",bloom_false_positives);
+			printf("Prefilter Utilization: %5.2f%% (should be high)\n",prefilter.utilization()*100.0);
 
-		printf("Bloom filter utilization: %5.2f%% (ideally less than 50%%)\n",
-		   masters.b.utilization()*100.0);
-		printf("Time to run: %4.2g seconds\n",runtime);
-	}
-	if(x) x->pop();
+			printf("Bloom filter utilization: %5.2f%% (ideally less than 50%%)\n",
+			   masters.b.utilization()*100.0);
+			printf("Time to run: %4.2g seconds\n",runtime);
+		}
+		if(x) x->pop();
 	}
 
 	if(x){
