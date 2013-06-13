@@ -496,7 +496,7 @@ int nsrl_bloom_query_check( nsrl_bloom *b,const unsigned char *hash, int just_ch
     }
     /* All of the bits were set; hash must be in the bloom filter */
     if(b->debug>1) putchar('\n');
-    if (just_checking == 0) b->hits++;
+    if (just_checking == 0 && found == 1) b->hits++;
 #ifdef HAVE_PTHREAD
     if (b->multithreaded){
 	pthread_mutex_unlock(&b->mutex);
