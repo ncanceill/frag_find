@@ -520,7 +520,7 @@ void set_sampling_parameters(const std::string &p){
 		errx(1,"error: sampling parameters must be fraction[:passes]");
 	}
 	sampling_fraction = atof(params.at(0).c_str());
-	if(sampling_fraction<=0 || sampling_fraction>=1){
+	if(sampling_fraction<=0 || sampling_fraction>1){
 		errx(1,"error: sampling fraction f must be 0<f<=1; you provided '%s'",params.at(0).c_str());
 	}
 	if(params.size()==2){
